@@ -3,12 +3,11 @@ repositories {
   maven("https://jitpack.io")
 }
 plugins {
-  kotlin("jvm") version "1.5.10"
+  kotlin("jvm") version "1.5.20-M1"
   id("com.github.johnrengelman.shadow") version "6.1.0"
 }
 dependencies {
-  implementation("io.ktor:ktor-server-netty:1.6.0")
-  implementation("org.redisson:redisson:3.15.5")
+  implementation("com.google.guava:guava:30.1.1-jre")
   implementation("co.touchlab:stately-isolate-jvm:1.1.7-a1")
   implementation("ch.qos.logback:logback-classic:1.3.0-alpha5")
   testImplementation("org.junit.jupiter:junit-jupiter:5.8.0-M1")

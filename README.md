@@ -1,18 +1,19 @@
-## Service
+## Wolf, Goat and Cabbage
 
-Kotlin microservice template produces self-executable jar application. For brevity, double-space
-formatting is used. [`Ktor`](https://ktor.io/) is included to mock Digital Ocean healthy checks.
-
-### Usage
-
-Make sure you are signed in to your GitHub account, then just
-click [`here`](https://github.com/demidko/service/generate) to use template.
+Kotlin-way to
+solve [wolf, goat and cabbage](https://en.wikipedia.org/wiki/Wolf,_goat_and_cabbage_problem)
+problem in FP style.
 
 ### Build
 
-Execute `./gradlew clean test shadowJar`. Your jar will be located at `./build/libs`.
+```shell
+./gradlew clean test shadowJar
+```
 
-### Deploy
+Self-executable jar will be located in `build/libs`. You
+need [jdk 16](https://www.oracle.com/java/technologies/javase-jdk16-downloads.html) installed. To
+start application execute command
 
-[![Deploy to DO](https://www.deploytodo.com/do-btn-blue-ghost.svg)](https://cloud.digitalocean.com/apps/new?repo=https://github.com/demidko/service/tree/main)
-
+```shell
+java -jar build/libs/*-all.jar
+```
