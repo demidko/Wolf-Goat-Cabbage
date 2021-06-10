@@ -1,77 +1,81 @@
 import com.google.common.collect.Iterables.cycle
 import java.util.*
 
-open class Person(vararg val enemies: Person) {
+data class River<T>(val leftside: Set<T>, val rightside: Set<T>)
 
-  override fun toString() = javaClass.name
-}
-
-typealias Group = Set<Person>
-
-typealias River = Pair<Group, Group>
-
-typealias History = LinkedList<River>
-
-fun historyOf(vararg river: River) = river.toList().let(::History)
-
-typealias Router = River.() -> Sequence<River>
-
-fun Group.leave(): Group {
-  val isDangerous = any {
-    it.enemies.any(::contains)
-  }
-  if (isDangerous) {
-    error("Enemies was found")
-  }
-  return this
-}
-
-fun Group.import(p: Person) = this + p
-
-fun Group.export(p: Person) = (this - p).leave()
-
-fun Group.export(to: Group) = sequence {
-  forEach {
-    try {
-      yield(River(leave(), to))
-    } catch (ignored: RuntimeException) {
-    }
-    try {
-      yield(River(export(it), to.import(it)))
-    } catch (ignored: RuntimeException) {
-    }
+fun <T> River<T>.leftToRight() = sequence {
+  yield(this@leftToRight)
+  leftside.forEach {
+    yield(River(leftside - it, rightside + it))
   }
 }
 
-inline fun swim(river: River, crossinline until: (River) -> Boolean) {
-  val exportToSecond: Router = {
-    first.export(second).also {
-      println("$this 🔜 ${it.toList()}")
-    }
-  }
-  val exportToFirst: Router = {
-    second.export(first).also {
-      println("$this 🔙 ${it.toList()}")
-    }
-  }
-  var parallelRivers = sequenceOf(river)
-  for (route in cycle(exportToSecond, exportToFirst)) {
-    parallelRivers = parallelRivers.flatMap(route)
-    if (parallelRivers.any(until)) {
-      break
-    }
+fun <T> River<T>.rightToLeft() = sequence {
+  yield(this@rightToLeft)
+  leftside.forEach {
+    yield(River(leftside + it, rightside - it))
   }
 }
 
-object `🐺` : Person()
+typealias Rule<T> = River<T>.() -> Boolean
 
-object `🐐` : Person(`🐺`)
+fun <T> enemies(vararg e: T): Rule<T> = {
+  leftside.count(e::contains) <= 1
+    && rightside.count(e::contains) <= 1
+}
 
-object `🥬` : Person(`🐐`)
+fun <T> original(): Rule<T> {
+  val history = LinkedHashSet<River<T>>()
+  return {
+    history.add(this)
+  }
+}
+
+fun <T> withRules(vararg rules: Rule<T>): Rule<T> = {
+  rules.all { it(this) }
+}
+
+fun <T> whileCondition(condition: Rule<T>): Rule<T> = condition
+
+fun repeatAction(action: Sequence<River<T>>.() -> Unit): Sequence<River<T>>.() -> Unit = action
+
+inline fun <T> River<T>.loop(
+  noinline filter: Rule<T>,
+  crossinline condition: Rule<T>,
+  crossinline action: Sequence<River<T>>.() -> Unit
+) {
+  var sequence = sequenceOf(this)
+  cycle(River<T>::leftToRight, River<T>::rightToLeft).forEach {
+    sequence = sequence.flatMap(it)
+    if (sequence.any(condition)) {
+      return
+    }
+    sequence = sequence.filter(filter).apply(action)
+  }
+}
+
 
 fun main() {
-  val property = setOf(`🐺`, `🐐`, `🥬`)
-  swim(River(property, emptySet())) {
-    it.second == property
-  }
+
+  val wolf = "🐺"
+  val goat = "🐐"
+  val cabbage = "🥬"
+
+  val persons = setOf(wolf, goat, cabbage)
+
+  val river = River(persons, emptySet())
+
+
+  river.loop<String>(
+    withRules(
+      enemies(wolf, goat),
+      enemies(goat, cabbage),
+      original()
+    ),
+    whileCondition {
+      rightside != persons
+    },
+    repeatAction {
+      println(this)
+    })
 }
