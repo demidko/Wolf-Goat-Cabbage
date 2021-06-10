@@ -1,7 +1,11 @@
 import com.google.common.collect.Iterables.cycle
 import java.util.*
 
-data class River<T>(val leftside: Set<T>, val rightside: Set<T>)
+data class River<T>(val leftside: Set<T>, val rightside: Set<T> = emptySet())
+
+typealias Rule<T> = River<T>.() -> Boolean
+
+typealias Action<T> = River<T>.() -> Unit
 
 fun <T> River<T>.leftToRight() = sequence {
   yield(this@leftToRight)
@@ -17,7 +21,6 @@ fun <T> River<T>.rightToLeft() = sequence {
   }
 }
 
-typealias Rule<T> = River<T>.() -> Boolean
 
 fun <T> enemies(vararg e: T): Rule<T> = {
   leftside.count(e::contains) <= 1
@@ -31,26 +34,32 @@ fun <T> original(): Rule<T> {
   }
 }
 
-fun <T> withRules(vararg rules: Rule<T>): Rule<T> = {
+fun <T> withFilters(vararg rules: Rule<T>): Rule<T> = {
   rules.all { it(this) }
 }
 
-fun <T> whileCondition(condition: Rule<T>): Rule<T> = condition
+fun <T> until(condition: Rule<T>) = condition
 
-fun repeatAction(action: Sequence<River<T>>.() -> Unit): Sequence<River<T>>.() -> Unit = action
+fun <T> repeatAction(action: Action<T>) = action
 
-inline fun <T> River<T>.loop(
-  noinline filter: Rule<T>,
-  crossinline condition: Rule<T>,
-  crossinline action: Sequence<River<T>>.() -> Unit
+inline fun <T> River<T>.swim(
+  noinline until: Rule<T>,
+  noinline rules: Rule<T>,
+  crossinline repeat: Action<T>
 ) {
   var sequence = sequenceOf(this)
-  cycle(River<T>::leftToRight, River<T>::rightToLeft).forEach {
-    sequence = sequence.flatMap(it)
-    if (sequence.any(condition)) {
+  for(next in cycle(River<T>::leftToRight, River<T>::rightToLeft)) {
+
+    sequence = sequence.flatMap(next)
+
+    sequence.filterNot(until).apply { forEach(repeat) }
+
+    if (stop.any()) {
       return
     }
-    sequence = sequence.filter(filter).apply(action)
+    sequence = sequence.filter(rules).apply {
+      forEach(repeat)
+    }
   }
 }
 
@@ -61,21 +70,16 @@ fun main() {
   val goat = "🐐"
   val cabbage = "🥬"
 
-  val persons = setOf(wolf, goat, cabbage)
-
-  val river = River(persons, emptySet())
-
-
-  river.loop<String>(
-    withRules(
-      enemies(wolf, goat),
-      enemies(goat, cabbage),
-      original()
-    ),
-    whileCondition {
-      rightside != persons
+  River(setOf(wolf, goat, cabbage)).swim(
+    until {
+      rightside.size < 3
     },
+    withFilters(
+      enemies(wolf, goat),
+      enemies(goat, cabbage)
+    ),
     repeatAction {
       println(this)
-    })
+    }
+  )
 }
