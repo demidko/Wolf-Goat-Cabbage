@@ -1,85 +1,146 @@
-import com.google.common.collect.Iterables.cycle
 import java.util.*
 
-data class River<T>(val leftside: Set<T>, val rightside: Set<T> = emptySet())
+/**
+ * Персонаж нашей ситуации может быть любым
+ */
+sealed class Person(private val name: String) {
 
-typealias Rule<T> = River<T>.() -> Boolean
+  override fun toString() = name
+}
 
-typealias Action<T> = River<T>.() -> Unit
+object Farmer : Person("👩🏻‍🌾")
 
-fun <T> River<T>.leftToRight() = sequence {
-  yield(this@leftToRight)
-  leftside.forEach {
-    yield(River(leftside - it, rightside + it))
+object Wolf : Person("🐺")
+
+object Goat : Person("🐐")
+
+object Cabbage : Person("🥬")
+
+/**
+ * Определим берег как набор персонажей
+ */
+typealias Riverside = Set<Person>
+
+/**
+ * Определим правила
+ */
+fun Riverside.isValid(): Boolean {
+  if (contains(Farmer)) {
+    return true
   }
-}
-
-fun <T> River<T>.rightToLeft() = sequence {
-  yield(this@rightToLeft)
-  leftside.forEach {
-    yield(River(leftside + it, rightside - it))
+  if (contains(Wolf) && contains(Goat)) {
+    return false
   }
-}
-
-
-fun <T> enemies(vararg e: T): Rule<T> = {
-  leftside.count(e::contains) <= 1
-    && rightside.count(e::contains) <= 1
-}
-
-fun <T> original(): Rule<T> {
-  val history = LinkedHashSet<River<T>>()
-  return {
-    history.add(this)
+  if (contains(Goat) && contains(Cabbage)) {
+    return false
   }
+  return true
 }
 
-fun <T> withFilters(vararg rules: Rule<T>): Rule<T> = {
-  rules.all { it(this) }
+/**
+ * Квантовая лодка находится в неопределенной состоянии между двумя берегами
+ */
+sealed class QuantumBoat(val leftside: Riverside, val rightside: Riverside) {
+
+  /**
+   * Покинуть текущий берег и направиться к противоположному
+   * @return все возможные состояния лодки
+   */
+  abstract fun invert(): List<QuantumBoat>
 }
 
-fun <T> until(condition: Rule<T>) = condition
+/**
+ * Лодка находится слева
+ */
+class LeftBoat(leftside: Riverside, rightside: Riverside = emptySet()) : QuantumBoat(leftside, rightside) {
 
-fun <T> repeatAction(action: Action<T>) = action
+  override fun toString() = "(⚓️$leftside⌢$rightside️)"
 
-inline fun <T> River<T>.swim(
-  noinline until: Rule<T>,
-  noinline rules: Rule<T>,
-  crossinline repeat: Action<T>
-) {
-  var sequence = sequenceOf(this)
-  for(next in cycle(River<T>::leftToRight, River<T>::rightToLeft)) {
+  override fun invert() =
+    leftside.map {
+      RightBoat(leftside - it - Farmer, rightside + it + Farmer)
+    } + RightBoat(leftside, rightside)
+}
 
-    sequence = sequence.flatMap(next)
+/**
+ * Лодка находится справа
+ */
+class RightBoat(leftside: Riverside = emptySet(), rightside: Riverside) : QuantumBoat(leftside, rightside) {
 
-    sequence.filterNot(until).apply { forEach(repeat) }
+  override fun toString() = "(️$leftside⌢$rightside⚓️)"
 
-    if (stop.any()) {
-      return
+  override fun invert() =
+    rightside.map {
+      LeftBoat(leftside + it + Farmer, rightside - it - Farmer)
+    } + LeftBoat(leftside, rightside)
+}
+
+/**
+ * История представляет список состояний лодки
+ */
+typealias History = LinkedList<QuantumBoat>
+
+/**
+ * @return новая история от первого состояния лодки
+ */
+fun historyOf(new: QuantumBoat) = History().apply { add(new) }
+
+/**
+ * Развилка мультивселенной состояний лодки на новый набор вселенных
+ */
+@Suppress("UNCHECKED_CAST")
+fun Sequence<History>.fork() = sequence {
+  for (history in this@fork) {
+    for (forked in history.last.invert()) {
+      yield((history.clone() as History).apply {
+        add(forked)
+      })
     }
-    sequence = sequence.filter(rules).apply {
-      forEach(repeat)
-    }
   }
 }
 
+/**
+ * Хронист будет думать за нас
+ * @param boat квантовая лодка фермера
+ */
+class Chronicler(boat: QuantumBoat) {
+
+  /**
+   * Мультивселенная в голове хрониста
+   */
+  private var multiverse = sequenceOf(historyOf(boat))
+
+  /**
+   * Поиск желаемого состояния в мультивселенной
+   * @param result желаемое состояние обеих берегов
+   */
+  fun search(result: QuantumBoat.() -> Boolean) = multiverse.filter { it.last.result() }.toList()
+
+  /**
+   * Плыть по мультивселенной дальше
+   * @param to произвольное описание
+   */
+  fun sail(): Chronicler {
+    multiverse = multiverse.fork().filter {
+      it.last.leftside.isValid() && it.last.rightside.isValid()
+    }
+    return this
+  }
+}
 
 fun main() {
-
-  val wolf = "🐺"
-  val goat = "🐐"
-  val cabbage = "🥬"
-
-  River(setOf(wolf, goat, cabbage)).swim(
-    until {
-      rightside.size < 3
-    },
-    withFilters(
-      enemies(wolf, goat),
-      enemies(goat, cabbage)
-    ),
-    repeatAction {
-      println(this)
+  val property = setOf(Wolf, Goat, Cabbage)
+  val chronicler = Chronicler(LeftBoat(property))
+  var multiverse = listOf<History>()
+  while (multiverse.isEmpty()) {
+    multiverse = chronicler.sail().search {
+      rightside.containsAll(property)
     }
-  )
+  }
+  for (history in multiverse) {
+    for (boat in history) {
+      print("→ $boat ")
+    }
+    println()
+  }
 }
