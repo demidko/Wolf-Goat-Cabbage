@@ -8,7 +8,7 @@ import Riverside
  */
 class RightBoat(left: Riverside, right: Riverside) : QuantumBoat(left, right) {
 
-  override fun toString() = "{$left⌢$right⚓️}"
+  override fun toString() = "($left⌢$right⚓️)"
 
   override fun invert() =
     right.map {

@@ -2,6 +2,8 @@ import boat.QuantumBoat
 
 /**
  * Мультиверсум для лодки
+ * @param boat исходное состояние лодки
+ * @param condition валидатор промежуточных состояний
  */
 class Multiverse(boat: QuantumBoat, val condition: Riverside.() -> Boolean) {
 

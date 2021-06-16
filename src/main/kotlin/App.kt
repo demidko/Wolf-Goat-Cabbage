@@ -17,10 +17,9 @@ fun main() {
 
   val property = setOf(Wolf, Goat, Cabbage)
 
-  val scripts = LeftBoat(property).where(Riverside::rule) {
-    right.containsAll(property)
-  }
-
-  scripts.forEach(History::prettyPrint)
+  LeftBoat(property)
+    .where(Riverside::rule)
+    { right.containsAll(property) }
+    .forEach(History::prettyPrint)
 }
 

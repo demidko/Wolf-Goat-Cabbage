@@ -16,6 +16,7 @@ fun History.prettyPrint() {
     print("→ $boat ")
   }
   println("º")
+  println()
 }
 
 /**
