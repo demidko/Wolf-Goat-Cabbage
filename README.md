@@ -1,10 +1,9 @@
-## Wolf, Goat and Cabbage
+## River crossing puzzle
 
 ![](example.png "Domain-specific language example")
 
 Domain-specific language to
-solve [wolf, goat and cabbage](https://en.wikipedia.org/wiki/Wolf,_goat_and_cabbage_problem)
-problem.
+solve [river crossing puzzle](https://en.wikipedia.org/wiki/River_crossing_puzzle) problem.
 
 ### Build
 
