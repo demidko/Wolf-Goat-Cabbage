@@ -1,8 +1,10 @@
 ## Wolf, Goat and Cabbage
 
-Kotlin-way to
+![](example.png "Domain-specific language example")
+
+Domain-specific language to
 solve [wolf, goat and cabbage](https://en.wikipedia.org/wiki/Wolf,_goat_and_cabbage_problem)
-problem in FP style.
+problem.
 
 ### Build
 
